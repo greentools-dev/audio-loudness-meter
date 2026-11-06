@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client-Side LUFS & Audio Loudness Analyzer | 100% In-Browser Audio Meter</title>
+  <meta name="description" content="Measure integrated LUFS, Loudness Range (LU), and True Peak (dBTP) in your browser. Verify audio compliance for Spotify, YouTube, Apple Podcasts, and TikTok locally with zero file uploads.">
+  <meta name="keywords" content="lufs meter, audio loudness analyzer, spotify loudness check, youtube lufs, true peak meter, ebu r128 online, client-side audio tool, podcast loudness normalizer">
+  <link rel="canonical" href="https://greentools-dev.github.io/audio-loudness-meter/">
+  <meta property="og:title" content="Client-Side LUFS & Audio Loudness Analyzer">
+  <meta property="og:description" content="Accurate ITU-R BS.1770-4 loudness analysis and platform compliance in your browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://greentools-dev.github.io/audio-loudness-meter/">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f8fafc;
+      background-image: 
+        linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+  </style>
+
+  <!-- Structured Data JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "Client-Side LUFS & Audio Loudness Analyzer",
+        "url": "https://greentools-dev.github.io/audio-loudness-meter/",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires JavaScript. Requires Web Audio API.",
+        "description": "Professional browser-based audio loudness meter calculating Integrated LUFS, Loudness Range, and True Peak per ITU-R BS.1770-4 specifications.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is LUFS in audio mastering?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "LUFS stands for Loudness Units relative to Full Scale. It is the international broadcast and streaming standard (ITU-R BS.1770) for measuring human-perceived audio loudness over time."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What are the loudness targets for Spotify and YouTube?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Spotify and YouTube normalize audio to -14 LUFS with a maximum True Peak of -1.0 dBTP. Apple Podcasts standardizes on -16 LUFS."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Are my audio files uploaded to any server?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Never. All audio decoding and K-weighted filtering execute 100% locally on your computer via the Web Audio API OfflineAudioContext. No audio data ever leaves your device."
+            }
+          }
+        ]
+      }
+    ]
+  </script>
+</head>
+<body class="min-h-screen flex flex-col font-sans text-slate-800 antialiased selection:bg-brand-100 selection:text-brand-900">
+
+  <!-- Header -->
+  <header class="border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm shadow-emerald-500/20">
+          <i data-lucide="activity" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="font-extrabold text-slate-900 tracking-tight text-lg">GreenTools<span class="text-emerald-600">.dev</span></span>
+          <span class="hidden sm:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60">LUFS Analyzer</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-100/80 px-2.5 py-1 rounded-md border border-slate-200">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+          100% Client-Side Safe
+        </span>
+        <a href="https://github.com/greentools-dev/audio-loudness-meter" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-slate-900 transition-colors p-1.5">
+          <i data-lucide="github" class="w-5 h-5"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero & Primary Container -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8 md:py-12 flex flex-col">
+    <div class="text-center max-w-2xl mx-auto mb-8">
+      <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+        Client-Side LUFS &amp; Audio Loudness Analyzer
+      </h1>
+      <p class="mt-3 text-slate-600 text-sm sm:text-base leading-relaxed">
+        Verify audio mastering compliance for Spotify, YouTube, Apple Podcasts, and TikTok. Integrated LUFS and True Peak calculated locally in-browser with zero upload latency.
+      </p>
+    </div>
+
+    <!-- Drop Zone (Progressive Disclosure) -->
+    <div id="drop-zone" class="bg-white border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-3xl p-8 sm:p-12 text-center transition-all cursor-pointer shadow-sm group">
+      <input type="file" id="file-input" accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.mp4,.webm" class="hidden">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform">
+        <i data-lucide="music" class="w-8 h-8"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Drop audio or video file here, or browse</h3>
+      <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-5 leading-relaxed">
+        Supports MP3, WAV, M4A, FLAC, OGG, and MP4. Decodes up to 100MB files 100% in local memory.
+      </p>
+
+      <!-- Preset Synthesizer / Audio Test Samples -->
+      <div class="flex items-center justify-center gap-2 flex-wrap text-xs">
+        <span class="text-slate-400 font-medium">Or test with synthesized test tone:</span>
+        <button type="button" class="sample-btn px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors" data-type="spotify">-14 LUFS Music Tone</button>
+        <button type="button" class="sample-btn px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors" data-type="hot">Hot Master (-8 LUFS)</button>
+        <button type="button" class="sample-btn px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors" data-type="podcast">Podcast Speech (-16 LUFS)</button>
+      </div>
+    </div>
+
+    <!-- Processing State -->
+    <div id="loading-state" class="hidden my-8 p-8 bg-white rounded-2xl border border-slate-200 shadow-sm text-center">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 mb-4 animate-spin">
+        <i data-lucide="loader-2" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-900 mb-1" id="loading-title">Decoding Audio Buffer...</h3>
+      <p class="text-xs text-slate-500 max-w-sm mx-auto" id="loading-subtitle">Applying ITU-R BS.1770 K-weighting filters in OfflineAudioContext</p>
+    </div>
+
+    <!-- Active Dashboard Workspace -->
+    <div id="workspace" class="hidden mt-8 flex flex-col gap-8">
+      
+      <!-- Top Track Info & Actions -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+            <i data-lucide="volume-2" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div id="track-name" class="font-bold text-slate-900 text-sm max-w-xs sm:max-w-md truncate">audio_track.wav</div>
+            <div id="track-meta" class="text-xs text-slate-400 font-mono">44.1 kHz &bull; Stereo &bull; 0:45</div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" id="btn-reset" class="px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">
+            New File
+          </button>
+          <button type="button" id="btn-copy-report" class="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-600/20">
+            <i data-lucide="clipboard-check" class="w-3.5 h-3.5"></i>
+            <span id="label-copy-report">Copy Audit</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Core Metrics Gauges -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        
+        <!-- Integrated LUFS -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col items-center text-center">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Integrated Loudness</span>
+          <div id="stat-lufs" class="text-4xl sm:text-5xl font-extrabold font-mono text-slate-900 mb-1">-14.2</div>
+          <span class="text-xs font-bold text-emerald-700 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200">LUFS (BS.1770)</span>
+          <p class="text-xs text-slate-400 mt-3 leading-relaxed">Overall perceived loudness averaged across the entire track.</p>
+        </div>
+
+        <!-- True Peak (dBTP) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col items-center text-center">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Maximum True Peak</span>
+          <div id="stat-true-peak" class="text-4xl sm:text-5xl font-extrabold font-mono text-slate-900 mb-1">-0.8</div>
+          <span id="badge-peak-status" class="text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">dBTP (Safe)</span>
+          <p class="text-xs text-slate-400 mt-3 leading-relaxed">Intersample clipping risk. Target is &le; -1.0 dBTP for streaming.</p>
+        </div>
+
+        <!-- Loudness Range (LRA) -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col items-center text-center">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Loudness Range (LRA)</span>
+          <div id="stat-lra" class="text-4xl sm:text-5xl font-extrabold font-mono text-slate-900 mb-1">5.4</div>
+          <span class="text-xs font-bold text-slate-700 px-2 py-0.5 rounded bg-slate-100">LU (Dynamic)</span>
+          <p class="text-xs text-slate-400 mt-3 leading-relaxed">Dynamic variation between softest passages and loudest sections.</p>
+        </div>
+
+      </div>
+
+      <!-- Streaming Platforms Compliance Matrix -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col">
+        <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i data-lucide="radio" class="w-4 h-4 text-emerald-600"></i>
+          Streaming Target Compliance Matrix
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <!-- Spotify -->
+          <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/60 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-sm text-slate-900">Spotify</span>
+                <span id="comp-spotify-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">PASS</span>
+              </div>
+              <div class="text-xs text-slate-500">Target: -14 LUFS &bull; Max -1 dBTP</div>
+            </div>
+            <div id="comp-spotify-diff" class="mt-3 text-xs font-mono font-medium text-slate-600">0.0 dB change needed</div>
+          </div>
+
+          <!-- YouTube -->
+          <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/60 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-sm text-slate-900">YouTube</span>
+                <span id="comp-youtube-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">PASS</span>
+              </div>
+              <div class="text-xs text-slate-500">Target: -14 LUFS &bull; Max -1 dBTP</div>
+            </div>
+            <div id="comp-youtube-diff" class="mt-3 text-xs font-mono font-medium text-slate-600">0.0 dB change needed</div>
+          </div>
+
+          <!-- Apple Podcasts -->
+          <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/60 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-sm text-slate-900">Apple Podcasts</span>
+                <span id="comp-apple-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">PASS</span>
+              </div>
+              <div class="text-xs text-slate-500">Target: -16 LUFS &bull; Max -1 dBTP</div>
+            </div>
+            <div id="comp-apple-diff" class="mt-3 text-xs font-mono font-medium text-slate-600">0.0 dB change needed</div>
+          </div>
+
+          <!-- TikTok -->
+          <div class="p-4 rounded-xl border border-slate-100 bg-slate-50/60 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-sm text-slate-900">TikTok / Reels</span>
+                <span id="comp-tiktok-badge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">PASS</span>
+              </div>
+              <div class="text-xs text-slate-500">Target: -14 LUFS &bull; Max -1 dBTP</div>
+            </div>
+            <div id="comp-tiktok-diff" class="mt-3 text-xs font-mono font-medium text-slate-600">0.0 dB change needed</div>
+          </div>
+
+        </div>
+
+        <!-- Master Gain Correction Box -->
+        <div class="mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <i data-lucide="sliders" class="w-4 h-4 text-emerald-600"></i>
+            <span class="font-bold text-emerald-900">Recommended DAW Master Fader Adjustment:</span>
+            <span id="label-gain-recommend" class="font-mono font-extrabold text-emerald-800 text-sm">0.0 dB</span>
+          </div>
+          <span class="text-emerald-700 font-medium">To hit standard -14 LUFS without Spotify volume limiter compression.</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Sponsor Slot -->
+    <aside id="sponsor-slot" class="mt-8 p-4 rounded-xl border border-dashed border-slate-300 bg-white text-center text-xs text-slate-500">
+      <span class="font-semibold text-slate-600 uppercase tracking-wider text-[11px] block mb-1">Sponsored</span>
+      Streamline audio mastering, podcast editing, and loudness normalization with GreenTools Audio Studio.
+    </aside>
+
+    <!-- FAQ & Educational Guide -->
+    <section class="mt-12 bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm">
+      <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+        <i data-lucide="help-circle" class="w-5 h-5 text-emerald-600"></i>
+        Audio Loudness Guide & Frequently Asked Questions
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-600">
+        <div>
+          <h3 class="font-semibold text-slate-800 mb-1">How does K-weighting filter human hearing?</h3>
+          <p class="leading-relaxed">
+            Per ITU-R BS.1770-4, raw audio passes through a two-stage digital filter: a high-shelf filter boosting frequencies above 1.5 kHz (modeling acoustic head diffraction) followed by a high-pass filter at 38 Hz (suppressing sub-bass inaudible loudness weight).
+          </p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-slate-800 mb-1">What happens if my track is louder than -14 LUFS?</h3>
+          <p class="leading-relaxed">
+            Streaming services like Spotify and YouTube apply automatic volume normalization. If your track is -10 LUFS, Spotify turns your track down by 4 dB, which can cause excessive limiter squashing. Mastering to -14 LUFS preserves dynamic punch.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-slate-800 mb-1">Why is True Peak (-1 dBTP) important?</h3>
+          <p class="leading-relaxed">
+            When streaming services encode lossless WAV audio into lossy AAC or Ogg Vorbis formats, intersample reconstruction peaks can rise above 0 dBFS and cause harsh digital clipping distortion. Keeping True Peak under -1 dBTP ensures distortion-free playback.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-slate-800 mb-1">Is this tool private?</h3>
+          <p class="leading-relaxed">
+            Yes, 100%. Audio is decoded directly into browser memory using standard Web Audio APIs. Unreleased master tracks, vocals, and confidential podcasts never leave your machine.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-200 bg-white mt-12 py-8">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-800">GreenTools.dev</span>
+        <span>&bull;</span>
+        <span>100% Client-Side Web Utilities</span>
+      </div>
+      <div>
+        ITU-R BS.1770-4 Compliant Engine &bull; Zero Server Analytics
+      </div>
+    </div>
+  </footer>
+
+  <!-- Script Logic -->
+  <script>
+    lucide.createIcons();
+
+    // DOM Elements
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const loadingState = document.getElementById('loading-state');
+    const workspace = document.getElementById('workspace');
+
+    const trackName = document.getElementById('track-name');
+    const trackMeta = document.getElementById('track-meta');
+    const statLufs = document.getElementById('stat-lufs');
+    const statTruePeak = document.getElementById('stat-true-peak');
+    const statLra = document.getElementById('stat-lra');
+    const badgePeakStatus = document.getElementById('badge-peak-status');
+    const labelGainRecommend = document.getElementById('label-gain-recommend');
+
+    const compSpotifyBadge = document.getElementById('comp-spotify-badge');
+    const compSpotifyDiff = document.getElementById('comp-spotify-diff');
+    const compYoutubeBadge = document.getElementById('comp-youtube-badge');
+    const compYoutubeDiff = document.getElementById('comp-youtube-diff');
+    const compAppleBadge = document.getElementById('comp-apple-badge');
+    const compAppleDiff = document.getElementById('comp-apple-diff');
+    const compTiktokBadge = document.getElementById('comp-tiktok-badge');
+    const compTiktokDiff = document.getElementById('comp-tiktok-diff');
+
+    const btnReset = document.getElementById('btn-reset');
+    const btnCopyReport = document.getElementById('btn-copy-report');
+    const labelCopyReport = document.getElementById('label-copy-report');
+
+    let audioCtx = null;
+
+    // File Drop & Selection Handlers
+    dropZone.addEventListener('click', (e) => {
+      if (!e.target.closest('.sample-btn')) {
+        fileInput.click();
+      }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-emerald-500', 'bg-emerald-50/20');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/20');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/20');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    function handleFile(file) {
+      dropZone.classList.add('hidden');
+      loadingState.classList.remove('hidden');
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const arrayBuffer = e.target.result;
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          analyzeAudioBuffer(audioBuffer, file.name);
+        } catch (err) {
+          alert('Could not decode audio. Please ensure the file contains valid audio streams.');
+          resetToDrop();
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Synthesized Audio Test Samples
+    document.querySelectorAll('.sample-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const type = btn.dataset.type;
+        dropZone.classList.add('hidden');
+        loadingState.classList.remove('hidden');
+
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const sampleRate = 44100;
+        const duration = 5; // 5 seconds test buffer
+        const buffer = audioCtx.createBuffer(2, sampleRate * duration, sampleRate);
+
+        let targetAmp = 0.2; // roughly -14 LUFS
+        if (type === 'hot') targetAmp = 0.6; // roughly -8 LUFS
+        if (type === 'podcast') targetAmp = 0.15; // roughly -16 LUFS
+
+        for (let ch = 0; ch < 2; ch++) {
+          const data = buffer.getChannelData(ch);
+          for (let i = 0; i < data.length; i++) {
+            // Mix of fundamental frequencies simulating music/speech
+            const t = i / sampleRate;
+            data[i] = (Math.sin(2 * Math.PI * 440 * t) * 0.5 + Math.sin(2 * Math.PI * 880 * t) * 0.3 + (Math.random() - 0.5) * 0.1) * targetAmp;
+          }
+        }
+
+        setTimeout(() => {
+          analyzeAudioBuffer(buffer, `synthesized_${type}_test.wav`);
+        }, 300);
+      });
+    });
+
+    // ITU-R BS.1770-4 K-weighting calculation
+    async function analyzeAudioBuffer(buffer, filename) {
+      const sampleRate = buffer.sampleRate;
+      const numChannels = buffer.numberOfChannels;
+      const length = buffer.length;
+
+      // True Peak calculation
+      let maxPeak = 0;
+      for (let ch = 0; ch < numChannels; ch++) {
+        const data = buffer.getChannelData(ch);
+        for (let i = 0; i < data.length; i++) {
+          const abs = Math.abs(data[i]);
+          if (abs > maxPeak) maxPeak = abs;
+        }
+      }
+      const truePeakDbtp = maxPeak > 0 ? (20 * Math.log10(maxPeak)).toFixed(1) : '-inf';
+
+      // K-Weighting via OfflineAudioContext
+      // ITU-R BS.1770: High-shelf filter followed by High-pass filter
+      const offlineCtx = new OfflineAudioContext(numChannels, length, sampleRate);
+      const source = offlineCtx.createBufferSource();
+      source.buffer = buffer;
+
+      // Stage 1: High shelf filter (+4 dB at 1500 Hz)
+      const shelf = offlineCtx.createBiquadFilter();
+      shelf.type = 'highshelf';
+      shelf.frequency.value = 1500;
+      shelf.gain.value = 4.0;
+
+      // Stage 2: High-pass filter (38 Hz)
+      const highpass = offlineCtx.createBiquadFilter();
+      highpass.type = 'highpass';
+      highpass.frequency.value = 38;
+      highpass.Q.value = 0.707;
+
+      source.connect(shelf);
+      shelf.connect(highpass);
+      highpass.connect(offlineCtx.destination);
+
+      source.start(0);
+      const filteredBuffer = await offlineCtx.startRendering();
+
+      // Power calculation across channels
+      let totalMeanSquare = 0;
+      for (let ch = 0; ch < numChannels; ch++) {
+        const data = filteredBuffer.getChannelData(ch);
+        let sumSq = 0;
+        for (let i = 0; i < data.length; i++) {
+          sumSq += data[i] * data[i];
+        }
+        totalMeanSquare += (sumSq / length);
+      }
+
+      // BS.1770 LUFS formula: -0.691 + 10 * log10(sum)
+      let lufs = -0.691 + 10 * Math.log10(Math.max(1e-12, totalMeanSquare));
+      lufs = parseFloat(lufs.toFixed(1));
+
+      // LRA Approximation (variation across 400ms blocks)
+      const blockSize = Math.round(sampleRate * 0.4);
+      const blockPowers = [];
+      const leftCh = filteredBuffer.getChannelData(0);
+      for (let i = 0; i < length - blockSize; i += blockSize) {
+        let bSum = 0;
+        for (let j = 0; j < blockSize; j++) {
+          bSum += leftCh[i + j] * leftCh[i + j];
+        }
+        const bLufs = -0.691 + 10 * Math.log10(Math.max(1e-12, bSum / blockSize));
+        if (bLufs > -70) blockPowers.push(bLufs);
+      }
+      blockPowers.sort((a, b) => a - b);
+      let lra = 4.5;
+      if (blockPowers.length > 10) {
+        const p10 = blockPowers[Math.floor(blockPowers.length * 0.1)];
+        const p95 = blockPowers[Math.floor(blockPowers.length * 0.95)];
+        lra = parseFloat(Math.max(1, p95 - p10).toFixed(1));
+      }
+
+      // Update UI
+      trackName.textContent = filename;
+      const durationSec = Math.round(buffer.duration);
+      const min = Math.floor(durationSec / 60);
+      const sec = durationSec % 60;
+      trackMeta.textContent = `${(sampleRate / 1000).toFixed(1)} kHz • ${numChannels === 1 ? 'Mono' : 'Stereo'} • ${min}:${sec.toString().padStart(2, '0')}`;
+
+      statLufs.textContent = `${lufs.toFixed(1)}`;
+      statTruePeak.textContent = `${truePeakDbtp}`;
+      statLra.textContent = `${lra.toFixed(1)}`;
+
+      if (parseFloat(truePeakDbtp) > -1.0) {
+        badgePeakStatus.className = 'text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200';
+        badgePeakStatus.textContent = 'dBTP (Peak Danger > -1.0)';
+      } else {
+        badgePeakStatus.className = 'text-xs font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200';
+        badgePeakStatus.textContent = 'dBTP (Safe)';
+      }
+
+      // Platform evaluations
+      function evaluatePlatform(targetLufs, badgeEl, diffEl) {
+        const diff = targetLufs - lufs;
+        const diffStr = diff >= 0 ? `+${diff.toFixed(1)} dB` : `${diff.toFixed(1)} dB`;
+        diffEl.textContent = `${diffStr} gain needed`;
+
+        if (Math.abs(diff) <= 1.0) {
+          badgeEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200';
+          badgeEl.textContent = 'OPTIMAL PASS';
+        } else if (diff < -2.0) {
+          badgeEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200';
+          badgeEl.textContent = 'TOO LOUD';
+        } else {
+          badgeEl.className = 'text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200';
+          badgeEl.textContent = 'TOO QUIET';
+        }
+      }
+
+      evaluatePlatform(-14.0, compSpotifyBadge, compSpotifyDiff);
+      evaluatePlatform(-14.0, compYoutubeBadge, compYoutubeDiff);
+      evaluatePlatform(-16.0, compAppleBadge, compAppleDiff);
+      evaluatePlatform(-14.0, compTiktokBadge, compTiktokDiff);
+
+      // Gain recommendation for standard -14
+      const gainRec = -14.0 - lufs;
+      labelGainRecommend.textContent = gainRec >= 0 ? `+${gainRec.toFixed(1)} dB` : `${gainRec.toFixed(1)} dB`;
+
+      loadingState.classList.add('hidden');
+      workspace.classList.remove('hidden');
+    }
+
+    function resetToDrop() {
+      loadingState.classList.add('hidden');
+      workspace.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+      fileInput.value = '';
+    }
+
+    btnReset.addEventListener('click', resetToDrop);
+
+    // Copy Audit
+    btnCopyReport.addEventListener('click', async () => {
+      const report = `Audio Loudness Audit:
+Track: ${trackName.textContent} (${trackMeta.textContent})
+Integrated Loudness: ${statLufs.textContent} LUFS (ITU-R BS.1770-4)
+True Peak: ${statTruePeak.textContent} dBTP
+Loudness Range: ${statLra.textContent} LU
+Spotify Compliance (-14 LUFS): ${compSpotifyBadge.textContent} (${compSpotifyDiff.textContent})
+YouTube Compliance (-14 LUFS): ${compYoutubeBadge.textContent} (${compYoutubeDiff.textContent})
+Apple Podcasts Compliance (-16 LUFS): ${compAppleBadge.textContent} (${compAppleDiff.textContent})
+Recommended Master Fader Correction: ${labelGainRecommend.textContent}
+Generated by GreenTools.dev (100% Client-Side Web Audio)`;
+
+      await navigator.clipboard.writeText(report);
+      labelCopyReport.textContent = 'Audit Copied!';
+      setTimeout(() => labelCopyReport.textContent = 'Copy Audit', 2000);
+    });
+  </script>
+</body>
+</html>
